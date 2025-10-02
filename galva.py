@@ -6,7 +6,51 @@ from datetime import datetime
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 db = SQLAlchemy(app)
+
+# --- VecaisKorpuss models ---
+class VecaisKorpuss(db.Model):
+    __tablename__ = 'vecais_korpuss'
+    id = db.Column(db.Integer, primary_key=True)
+    stavs1 = db.relationship('PirmaisStavs', backref='korpuss', lazy=True)
+    stavs2 = db.relationship('OtraisStavs', backref='korpuss', lazy=True)
+    stavs3 = db.relationship('TresaisStavs', backref='korpuss', lazy=True)
+
+class PirmaisStavs(db.Model):
+    __tablename__ = 'pirmais_stavs'
+    klase = db.Column(db.Integer, primary_key=True)
+    pieejams = db.Column(db.Boolean, nullable=False)
+    idk = db.Column(db.String(50), nullable=False)
+    korpuss_id = db.Column(db.Integer, db.ForeignKey('vecais_korpuss.id'), nullable=False)
+
+class OtraisStavs(db.Model):
+    __tablename__ = 'otrais_stavs'
+    id = db.Column(db.Integer, primary_key=True)
+    pieejams = db.Column(db.Boolean, nullable=False)
+    idk = db.Column(db.String(50), nullable=False)
+    korpuss_id = db.Column(db.Integer, db.ForeignKey('vecais_korpuss.id'), nullable=False)
+
+class TresaisStavs(db.Model):
+    __tablename__ = 'tresais_stavs'
+    id = db.Column(db.Integer, primary_key=True)
+    pieejams = db.Column(db.Boolean, nullable=False)
+    idk = db.Column(db.String(50), nullable=False)
+    korpuss_id = db.Column(db.Integer, db.ForeignKey('vecais_korpuss.id'), nullable=False)
 # Definējam datubāzes modeļus
+class Personas(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    vards = db.Column(db.String(50), nullable=False)
+    uzvards = db.Column(db.String(50), nullable=False)
+    piekluvesLimenis = db.Column(db.String(50), nullable=False)
+
+class Pirmais_(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    veids = db.Column(db.String(50), nullable=False)
+    datums1 = db.Column(db.DateTime, default=datetime.utcnow)
+    skaits = db.Column(db.Integer, nullable=False)
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(200), nullable=False)
+
 class Tabula1(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     vards = db.Column(db.String(50), nullable=False)
@@ -16,18 +60,27 @@ class Tabula1(db.Model):
 class Tabula2(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     veids = db.Column(db.String(50), nullable=False)
-    datums1 = db.Column(db.DateTime, default=datetime.utcnow)
     skaits = db.Column(db.Integer, nullable=False)
-class Task(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.String(200), nullable=False)
 
 # Izveidojam datubāzi
 with app.app_context():
-    # Izveidojam datubāzi
     db.create_all()
+    # Create VecaisKorpuss with 3 floors if not exists
+    if not VecaisKorpuss.query.first():
+        korpuss = VecaisKorpuss()
+        db.session.add(korpuss)
+        db.session.commit()
+        
+        # Create each floor
+        stavs1 = PirmaisStavs(pieejams=True, idk='1st Floor', korpuss_id=korpuss.id)
+        stavs2 = OtraisStavs(pieejams=True, idk='2nd Floor', korpuss_id=korpuss.id)
+        stavs3 = TresaisStavs(pieejams=True, idk='3rd Floor', korpuss_id=korpuss.id)
+        
+        db.session.add_all([stavs1, stavs2, stavs3])
+        db.session.commit()
 
-# Dekorācija uz ieraksta izveidi Tabulā1
+#Create an entry called vecaisKorpuss with 3 under entries that have 3 fields each: ID, pieejams, idk
+
 def create_entry(data):
     new_entry = Tabula1(vards=data['vards'], uzvards=data['uzvards'], vecums=data['vecums'])
 
